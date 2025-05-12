@@ -71,6 +71,7 @@ This project was created by:
 - VCC → 5V from regulated source
 - GND → ESP32 ground
 
+![Cyber Truck Project](./images/hardware.jpg)
 ## 📊 ESP32 System Architecture & Signal Flow
 
 ### Core Components Interaction
