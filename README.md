@@ -4,11 +4,14 @@
 [![ESP32](https://img.shields.io/badge/ESP32-v4.4.0-blue.svg)](https://www.espressif.com/en/products/socs/esp32)
 [![Arduino](https://img.shields.io/badge/Arduino-IDE-009D93.svg)](https://www.arduino.cc/)
 
-![Project Banner](https://via.placeholder.com/1200x400?text=ESP32+Cyber+Truck+RC+Project)
+![Cyber Truck Project](./images/cyber-truck.jpg)
 
 ## 📌 Overview
 
 An advanced ESP32-based RC vehicle control system utilizing differential steering for smooth, car-like maneuverability. The project demonstrates expertise in embedded systems programming, PWM motor control, real-time signal processing, and wireless communication.
+
+**Watch our project in action:**
+[![Test Drive Video](./images/test-ride-thumb.jpg)](./videos/test-ride.mp4)
 
 ## 🎮 Key Features
 
@@ -19,6 +22,16 @@ An advanced ESP32-based RC vehicle control system utilizing differential steerin
 - **LED Feedback System**: Integrated LED strip with multiple visualization modes for status indication
 - **High-Current Motor Control**: Interfaces with BTS7960 H-Bridge drivers for controlling high-torque Johnson motors
 - **Modular Architecture**: Clean code organization with separated functional components for easy maintenance and extension
+
+## 👥 Team
+
+This project was created by:
+
+| Team Member | Role | Contribution |
+|-------------|------|--------------|
+| **Kamal Bura** | Hardware Engineer | Primary hardware design and integration |
+| **Vighnesh** | Software Developer | Control algorithms and motor driver interface |
+| **Karthekeya** | Design Engineer | Chassis design and LED system implementation |
 
 ## 🔧 Hardware Components
 
@@ -37,7 +50,7 @@ An advanced ESP32-based RC vehicle control system utilizing differential steerin
 ### RC Receiver to ESP32
 - CH1 (Steering) → ESP32 pin 36
 - CH3 (Throttle) → ESP32 pin 34
-- Ground → ESP32 ground
+- CH5 (AUX1) → ESP32 pin 32
 
 ### BTS7960 Motor Drivers to ESP32
 
@@ -48,9 +61,14 @@ An advanced ESP32-based RC vehicle control system utilizing differential steerin
 - GND → ESP32 ground
 
 #### Right Motors Driver
-- RPWM (Forward) → ESP32 pin 32
-- LPWM (Reverse) → ESP32 pin 33
+- RPWM (Forward) → ESP32 pin 27
+- LPWM (Reverse) → ESP32 pin 18
 - VCC → 5V or 3.3V from regulated source
+- GND → ESP32 ground
+
+### LED Strip
+- Data Pin → ESP32 pin 13
+- VCC → 5V from regulated source
 - GND → ESP32 ground
 
 ## 📊 ESP32 System Architecture & Signal Flow
@@ -69,7 +87,7 @@ An advanced ESP32-based RC vehicle control system utilizing differential steerin
                       │                                      │   │                                  │
               ┌───────▼──────┐                    ┌──────────▼───▼──────────┐            ┌──────────▼─────────┐
               │ BTS7960      │                    │ BTS7960                 │            │ LED Control System  │
-              │ Left Motors  │                    │ Right Motors            │            │ (FastLED/NeoPixel)  │
+              │ Left Motors  │                    │ Right Motors            │            │ (FastLED)           │
               └───────┬──────┘                    └──────────┬──────────────┘            └──────────┬──────────┘
                       │                                      │                                      │
               ┌───────▼──────┐                    ┌──────────▼──────────────┐            ┌──────────▼──────────┐
@@ -90,6 +108,7 @@ An advanced ESP32-based RC vehicle control system utilizing differential steerin
 ┌─────────────────┐           │    ┌───────────────────────────────┐  │
 │  RC Receiver     │──CH1─────┼───▶│ Interrupt Handlers            │  │
 │  Channels        │──CH3─────┼───▶│ (Precise RC Signal Timing)    │  │
+│                  │──CH5─────┼───▶│                               │  │
 └─────────────────┘           │    └───────────────┬───────────────┘  │
                               │                    │                  │
                               │    ┌───────────────▼───────────────┐  │
@@ -117,44 +136,21 @@ An advanced ESP32-based RC vehicle control system utilizing differential steerin
 The Cyber Truck includes a sophisticated LED feedback system that provides visual status indication and aesthetic effects.
 
 ### LED Hardware Configuration
-- **LED Type**: WS2812B Addressable RGB LEDs (NeoPixels)
+- **LED Type**: WS2812B Addressable RGB LEDs
 - **Control Pin**: GPIO 13
 - **Number of LEDs**: 12
 - **Power**: 5V, driven directly from ESP32
 
 ### LED Functionality Matrix
 
-| Mode | Description | Operational Pattern | Associated RC Channel |
-|------|-------------|---------------------|----------------------|
-| 0 | All Off | All LEDs disabled | AUX2 position 1 |
-| 1 | Speed Indicator | Color gradient based on motor speed | AUX2 position 2 |
-| 2 | Rainbow Pattern | Continuous color cycling animation | AUX2 position 3 |
-| 3 | Direction Indicators | Blue (forward), Red (reverse), Yellow (turning) | AUX2 position 4 |
-| 4 | Chase Effect | Single LED chase around perimeter | AUX2 position 5 |
+| Mode | Description | Operational Pattern | Selection |
+|------|-------------|---------------------|-----------|
+| 0 | All Off | All LEDs disabled | AUX1 low range |
+| 1 | Speed Indicator | Color gradient based on motor speed | AUX1 low-mid range |
+| 2 | Rainbow Pattern | Continuous color cycling animation | AUX1 mid range |
+| 3 | Direction Indicators | Blue (forward), Red (reverse), Yellow (turning) | AUX1 mid-high range |
+| 4 | Chase Effect | Single LED chase around perimeter | AUX1 high range |
 | Failsafe | Warning Indicator | Rapid red flashing when signal lost | Automatic |
-
-### LED Integration Logic
-
-```cpp
-// LED control based on vehicle state
-void updateLEDs() {
-  switch (ledMode) {
-    case 0: // All off
-      fill_solid(leds, NUM_LEDS, CRGB::Black);
-      break;
-      
-    case 1: // Speed indicator - color based on throttle
-      {
-        int speed = max(abs(leftSpeed), abs(rightMotorSpeed));
-        CRGB color = CRGB(speed, 255-speed, 0); // Red to Green based on speed
-        fill_solid(leds, NUM_LEDS, color);
-      }
-      break;
-    
-    // Additional modes...
-  }
-}
-```
 
 ## 🧠 ESP32 Control Architecture
 
@@ -169,14 +165,14 @@ void updateLEDs() {
 
 | Function | GPIO Pin | Description |
 |----------|----------|-------------|
-| RC Channel 1 | 36 | Steering input (analog pin) |
-| RC Channel 3 | 34 | Throttle input (analog pin) |
+| RC Channel 1 (Steering) | 36 | Steering input from RC receiver |
+| RC Channel 3 (Throttle) | 34 | Throttle input from RC receiver |
+| RC Channel 5 (AUX1) | 32 | Mode selection input |
 | Left Motors Forward | 25 | PWM control to BTS7960 |
 | Left Motors Reverse | 26 | PWM control to BTS7960 |
-| Right Motors Forward | 32 | PWM control to BTS7960 |
-| Right Motors Reverse | 33 | PWM control to BTS7960 |
+| Right Motors Forward | 27 | PWM control to BTS7960 |
+| Right Motors Reverse | 18 | PWM control to BTS7960 |
 | LED Data | 13 | Addressable LED control |
-| Additional RC Channels | 32, 33 | Mode selection and features |
 
 ### ESP32 Processing Workflow
 
@@ -231,7 +227,7 @@ git clone https://github.com/yourusername/esp32-cyber-truck.git
 4. Use the transmitter controls:
    - Left stick: Forward/Reverse throttle
    - Right stick: Left/Right steering
-   - Channel 5/6: Additional features
+   - AUX1 switch: LED mode selection
 
 ## 🔬 Technical Achievements
 
@@ -239,6 +235,19 @@ git clone https://github.com/yourusername/esp32-cyber-truck.git
 - **Advanced Control Algorithms**: Developed proportional differential steering with smooth transitions
 - **Efficient Memory Usage**: Optimized code for ESP32's limited memory environment
 - **Failsafe Implementation**: Created robust error detection and handling mechanisms
+- **Smooth Direction Changes**: Implemented protection against sudden direction reversals
+
+## 🎥 Project Demo
+
+Check out our comprehensive demo video showcasing all features of the ESP32 Cyber Truck:
+
+[![Demo Video](./images/demo-thumb.jpg)](./videos/demo.mp4)
+
+The demo includes:
+- Different steering modes
+- LED lighting system demonstrations
+- Performance on various terrains
+- Failsafe feature in action
 
 ## 🔮 Future Enhancements
 
@@ -252,18 +261,19 @@ git clone https://github.com/yourusername/esp32-cyber-truck.git
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 👨‍💻 Author
+## 👨‍💻 Authors
 
-Your Name - [Your GitHub Profile](https://github.com/yourusername)
+Project by Kamal Bura, Vighnesh, and Karthekeya
 
 ## 🙏 Acknowledgments
 
 - ESP32 Community for their excellent documentation
+- FastLED library developers
 - Arduino community for library support
-- [Add any other acknowledgments here]
+- Our instructors and classmates for valuable feedback
 
 ---
 
 *Created as part of an embedded systems engineering project, this repository demonstrates practical application of microcontroller programming, PWM motor control, and real-time systems design.*
 
-![Project Demo](https://via.placeholder.com/800x400?text=Project+Demo+Video+Coming+Soon)
+![Cyber Truck Image Gallery](./images/cyber-truck-gallery.jpg)
