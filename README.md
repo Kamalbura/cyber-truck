@@ -209,7 +209,7 @@ The Cyber Truck includes a sophisticated LED feedback system that provides visua
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/esp32-cyber-truck.git
+git clone https://github.com/Kamalbura/cyber-truck.git
 ```
 
 2. Open the Arduino IDE and load the `esp32_rc_car.ino` file
@@ -277,4 +277,4 @@ Project by Kamal Bura, Vighnesh, and Karthekeya
 
 *Created as part of an embedded systems engineering project, this repository demonstrates practical application of microcontroller programming, PWM motor control, and real-time systems design.*
 
-![Cyber Truck Image Gallery](./images/cyber-truck-gallery.jpg)
+![Cyber Truck Image Gallery](./images/)
